@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MelodyMuse - Playlist Organizer</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Keeping the base dark theme */
+            --primary-color: #08D9D6; /* Vibrant Teal - Used for highlights */
+            --secondary-color: #252A34; /* Dark Slate Blue */
+            --dark-bg: #1A1A2E; /* Deep Navy */
+            --surface-color: #16213E; /* Darker Navy */
+            --text-color: #E9F6FF; /* Light Blueish White */
+            --text-muted-color: #a0a0a0;
+            --border-color: #0F3460; /* Dark Blue Border */
+            --danger-color: #E94560; /* Pinkish Red */
+        }
+
+        @keyframes cardFadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes detailsFadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--text-color);
+        }
+        .navbar {
+            background: linear-gradient(90deg, #16213E 0%, #0F3460 100%);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .navbar-brand {
+            font-weight: 700;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+            color: var(--primary-color);
+        }
+        .navbar-brand .fa-compact-disc {
+            transition: transform 0.5s ease;
+        }
+        .navbar-brand:hover .fa-compact-disc {
+            transform: rotate(360deg);
+        }
+        #main-title {
+            text-shadow: 0 0 10px rgba(8, 217, 214, 0.4);
+        }
+        .playlist-card {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            cursor: pointer;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: cardFadeInUp 0.6s ease forwards;
+        }
+        .playlist-card:hover {
+            transform: translateY(-10px) scale(1.03);
+            box-shadow: 0 15px 25px rgba(0,0,0,0.3), 0 0 20px var(--hover-glow-color, rgba(8, 217, 214, 0.4));
+            border-color: var(--hover-border-color, var(--primary-color));
+        }
+        .playlist-cover-art {
+            height: 200px;
+            /* Gradient will be set dynamically via JS */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            text-align: center;
+            transition: background 0.3s ease;
+        }
+        .playlist-cover-art-title {
+            font-weight: 700;
+            font-size: 1.75rem;
+            color: white;
+            text-shadow: 1px 1px 8px rgba(0,0,0,0.5);
+        }
+
+        .card-body, .card-footer {
+             background-color: var(--surface-color);
+             color: var(--text-color);
+        }
+        .card-footer {
+            border-top: 1px solid var(--border-color) !important;
+        }
+        .card-title {
+            color: #ffffff;
+        }
+        .card-text {
+            color: var(--text-muted-color);
+        }
+        .filter-section {
+            background-color: var(--secondary-color);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border-color);
+        }
+        .form-control, .form-select {
+            background-color: #2c2c2c;
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+        .form-control::placeholder {
+            color: var(--text-muted-color);
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: #2c2c2c;
+            color: var(--text-color);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(8, 217, 214, 0.3);
+        }
+        #playlist-details-view {
+            display: none;
+        }
+        #playlist-details-view.is-visible {
+            display: block;
+            animation: detailsFadeIn 0.5s ease forwards;
+        }
+        .tracklist-table tbody tr {
+            transition: background-color 0.2s ease-in-out;
+        }
+        .tracklist-table tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        .tracklist-table .btn-remove {
+            color: var(--danger-color);
+        }
+        .tracklist-table .btn-remove:hover {
+            color: #ff6b81;
+        }
+        
+        .btn-gradient {
+            background: linear-gradient(90deg, var(--primary-color) 0%, #533483 100%);
+            color: #ffffff;
+            border: none;
+            transition: all 0.3s ease;
+        }
+        .btn-gradient:hover {
+            box-shadow: 0 0 15px rgba(8, 217, 214, 0.5);
+            color: #ffffff;
+        }
+        .btn-outline-secondary {
+            color: var(--text-muted-color);
+            border-color: var(--border-color);
+            transition: all 0.3s ease;
+        }
+        .btn-outline-secondary:hover {
+            background-color: var(--secondary-color);
+            color: #ffffff;
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 15px rgba(37, 42, 52, 0.5);
+        }
+        .btn-danger {
+            background-color: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+         .btn-danger:hover {
+            background-color: #ff6b81;
+            border-color: #ff6b81;
+        }
+        .modal-content {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+        }
+        .modal-header, .modal-footer {
+            border-bottom-color: var(--border-color);
+            border-top-color: var(--border-color);
+        }
+        .table-light {
+            --bs-table-bg: var(--secondary-color);
+            --bs-table-color: var(--text-color);
+            border-color: var(--border-color);
+        }
+        .badge {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Main Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="#"><i class="fas fa-compact-disc me-2"></i>MelodyMuse</a>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Playlist Listing View -->
+        <div id="playlist-list-view">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+                 <div class="me-3">
+                    <h1 id="main-title" class="display-5 fw-bold mb-0">My Playlists</h1>
+                    <p class="text-muted mb-0">
+                        <span id="playlist-count">0</span> Playlists, <span id="song-count">0</span> Songs
+                    </p>
+                </div>
+                <button class="btn btn-gradient" data-bs-toggle="modal" data-bs-target="#createPlaylistModal"><i class="fas fa-plus me-2"></i>Create Playlist</button>
+            </div>
+
+
+            <!-- Filter and Search Section -->
+            <div class="filter-section mb-4">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <input type="text" id="search-input" class="form-control" placeholder="Search artists, songs, playlists...">
+                    </div>
+                    <div class="col-md-2">
+                        <select id="genre-filter" class="form-select">
+                            <option value="">All Genres</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select id="artist-filter" class="form-select">
+                            <option value="">All Artists</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                         <select id="sort-by" class="form-select">
+                            <option value="default">Sort By</option>
+                            <option value="title-asc">Title (A-Z)</option>
+                            <option value="tracks-desc">Most Tracks</option>
+                            <option value="tracks-asc">Fewest Tracks</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button id="reset-filters" class="btn btn-outline-secondary w-100">Reset</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Playlist Grid -->
+            <div id="playlist-grid" class="row g-4">
+                <!-- Playlists will be dynamically inserted here -->
+            </div>
+             <div id="no-results" class="text-center p-5" style="display: none;">
+                <h3>No Playlists Found</h3>
+                <p class="text-muted">Try adjusting your search or filter criteria.</p>
+            </div>
+        </div>
+
+        <!-- Playlist Details View -->
+        <div id="playlist-details-view">
+            <!-- Details will be dynamically inserted here -->
+        </div>
+    </div>
+
+    <!-- Create Playlist Modal -->
+    <div class="modal fade" id="createPlaylistModal" tabindex="-1" aria-labelledby="createPlaylistModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="createPlaylistModalLabel">Create New Playlist</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="create-playlist-form">
+              <div class="mb-3">
+                <label for="newPlaylistTitle" class="form-label">Playlist Title</label>
+                <input type="text" class="form-control" id="newPlaylistTitle" required>
+              </div>
+              <div class="mb-3">
+                <label for="newPlaylistDesc" class="form-label">Description</label>
+                <textarea class="form-control" id="newPlaylistDesc" rows="3"></textarea>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" id="save-playlist-btn" class="btn btn-gradient">Save Playlist</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Add Song Modal -->
+    <div class="modal fade" id="addSongModal" tabindex="-1" aria-labelledby="addSongModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addSongModalLabel">Add Song to Playlist</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="add-song-form">
+              <input type="hidden" id="addSongPlaylistId">
+              <div class="mb-3">
+                <label for="newSongTitle" class="form-label">Song Title</label>
+                <input type="text" class="form-control" id="newSongTitle" required>
+              </div>
+               <div class="mb-3">
+                <label for="newSongArtist" class="form-label">Artist</label>
+                <input type="text" class="form-control" id="newSongArtist" required>
+              </div>
+               <div class="mb-3">
+                <label for="newSongGenre" class="form-label">Genre</label>
+                <input type="text" class="form-control" id="newSongGenre" required>
+              </div>
+               <div class="mb-3">
+                <label for="newSongMood" class="form-label">Mood</label>
+                <input type="text" class="form-control" id="newSongMood" required>
+              </div>
+              <div class="mb-3">
+                <label for="newSongDuration" class="form-label">Duration (e.g., 3:45)</label>
+                <input type="text" class="form-control" id="newSongDuration" required>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" id="save-song-btn" class="btn btn-gradient">Add Song</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deletePlaylistModal" tabindex="-1" aria-labelledby="deletePlaylistModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="deletePlaylistModalLabel">Confirm Deletion</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            Are you sure you want to delete the playlist "<strong id="playlist-name-to-delete"></strong>"? This action cannot be undone.
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" id="confirm-delete-btn" class="btn btn-danger">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- jQuery and Bootstrap Bundle -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            // --- GENRE COLOR MAPPING ---
+            const genreColors = {
+                'Acoustic': { gradient: 'linear-gradient(135deg, #FAD961, #F76B1C)', color: '#FAD961' },
+                'Rock': { gradient: 'linear-gradient(135deg, #FF4B2B, #FF416C)', color: '#FF4B2B' },
+                'Lo-Fi': { gradient: 'linear-gradient(135deg, #89F7FE, #66A6FF)', color: '#89F7FE' },
+                'Indie': { gradient: 'linear-gradient(135deg, #A88BEB, #F8CEEC)', color: '#A88BEB' },
+                'Synthwave': { gradient: 'linear-gradient(135deg, #EA384D, #4A00E0)', color: '#EA384D' },
+                'Electronic': { gradient: 'linear-gradient(135deg, #00C9FF, #92FE9D)', color: '#00C9FF' },
+                'Psychedelic Rock': { gradient: 'linear-gradient(135deg, #f8ff00, #3ad59f)', color: '#f8ff00' },
+                'Funk': { gradient: 'linear-gradient(135deg, #ff9a9e, #fad0c4)', color: '#ff9a9e' },
+                'Hip-Hop': { gradient: 'linear-gradient(135deg, #FDFC47, #24FE41)', color: '#FDFC47' },
+                'Classical': { gradient: 'linear-gradient(135deg, #D7D2CC, #304352)', color: '#D7D2CC' },
+                'Jazz': { gradient: 'linear-gradient(135deg, #DAA520, #4A2F00)', color: '#DAA520' },
+                'Pop': { gradient: 'linear-gradient(135deg, #EC008C, #FC6767)', color: '#EC008C' },
+                'Pop Rock': { gradient: 'linear-gradient(135deg, #FC466B, #3F5EFB)', color: '#FC466B' },
+                'Default': { gradient: 'linear-gradient(135deg, #526D82, #27374D)', color: '#526D82' }
+            };
+
+            function getGenre(playlist) {
+                if (playlist.songs.length === 0) return 'Default';
+                // Simple logic: get the genre of the first song
+                const genre = playlist.songs[0].genre;
+                return genreColors[genre] ? genre : 'Default';
+            }
+
+
+            // --- DATA INITIALIZATION & LOCAL STORAGE BACKEND ---
+            let playlists = [];
+            const defaultPlaylists = [
+                {
+                    id: 1, title: "Sunrise Acoustics", description: "Soft, gentle acoustic tracks to ease you into the day.",
+                    songs: [
+                        { id: 101, title: "Holocene", artist: "Bon Iver", genre: "Acoustic", mood: "Chill", duration: "5:43" },
+                        { id: 104, title: "Naked As We Came", artist: "Iron & Wine", genre: "Acoustic", mood: "Calm", duration: "2:32" }
+                    ]
+                },
+                {
+                    id: 2, title: "Stadium Legends", description: "Anthems that filled stadiums and defined a generation. Turn it up to 11!",
+                    songs: [
+                        { id: 201, title: "Bohemian Rhapsody", artist: "Queen", genre: "Rock", mood: "Epic", duration: "5:55" },
+                        { id: 202, title: "Sweet Child o' Mine", artist: "Guns N' Roses", genre: "Rock", mood: "Energetic", duration: "5:56" },
+                        { id: 204, title: "Don't Stop Believin'", artist: "Journey", genre: "Rock", mood: "Uplifting", duration: "4:11" }
+                    ]
+                },
+                {
+                    id: 3, title: "2 AM Study Sesh", description: "Chilled out lo-fi hip hop beats. Zero distractions.",
+                    songs: [
+                        { id: 301, title: "Affection", artist: "Jinsang", genre: "Lo-Fi", mood: "Chill", duration: "2:20" },
+                        { id: 303, title: "Sunday Morning", artist: "Rook1e", genre: "Lo-Fi", mood: "Relaxed", duration: "1:58" }
+                    ]
+                },
+                {
+                    id: 4, title: "Indie Dance Party", description: "Flashback to the 2000s. Skinny jeans and dance floors.",
+                    songs: [
+                        { id: 401, title: "Time to Pretend", artist: "MGMT", genre: "Indie", mood: "Energetic", duration: "4:21" },
+                        { id: 402, title: "Walking On A Dream", artist: "Empire of the Sun", genre: "Indie", mood: "Uplifting", duration: "3:16" },
+                        { id: 404, title: "Take Me Out", artist: "Franz Ferdinand", genre: "Rock", mood: "Dance", duration: "3:57" }
+                    ]
+                },
+                {
+                    id: 5, title: "Neon Drive '88", description: "Cruising down a retro-futuristic highway at midnight.",
+                    songs: [
+                        { id: 501, title: "Nightcall", artist: "Kavinsky", genre: "Synthwave", mood: "Moody", duration: "4:19" },
+                        { id: 502, title: "Sunset", artist: "The Midnight", genre: "Synthwave", mood: "Nostalgic", duration: "5:27" },
+                        { id: 503, title: "Resonance", artist: "Home", genre: "Electronic", mood: "Dreamy", duration: "3:32" }
+                    ]
+                },
+                 {
+                    id: 6, title: "Global Groove", description: "An eclectic mix of infectious rhythms from around the world.",
+                    songs: [
+                        { id: 601, title: "The Less I Know The Better", artist: "Tame Impala", genre: "Psychedelic Rock", mood: "Groovy", duration: "3:36" },
+                        { id: 602, title: "Time (You and I)", artist: "Khruangbin", genre: "Funk", mood: "Chill", duration: "5:42" }
+                    ]
+                },
+                {
+                    id: 7, title: "90s Hip-Hop Throwback", description: "Golden age classics from the East Coast to the West Coast.",
+                    songs: [
+                        { id: 701, title: "C.R.E.A.M.", artist: "Wu-Tang Clan", genre: "Hip-Hop", mood: "Gritty", duration: "4:12" },
+                        { id: 702, title: "Juicy", artist: "The Notorious B.I.G.", genre: "Hip-Hop", mood: "Reflective", duration: "5:02" },
+                        { id: 703, title: "Nuthin' But A 'G' Thang", artist: "Dr. Dre, Snoop Dogg", genre: "Hip-Hop", mood: "Laid-back", duration: "3:58" }
+                    ]
+                },
+                {
+                    id: 8, title: "Classical Focus", description: "Timeless masterpieces to enhance concentration and creativity.",
+                    songs: [
+                        { id: 801, title: "Clair de Lune", artist: "Claude Debussy", genre: "Classical", mood: "Calm", duration: "5:05" },
+                        { id: 802, title: "Für Elise", artist: "Ludwig van Beethoven", genre: "Classical", mood: "Introspective", duration: "2:55" },
+                        { id: 803, title: "The Four Seasons - Spring", artist: "Antonio Vivaldi", genre: "Classical", mood: "Uplifting", duration: "10:00" }
+                    ]
+                },
+                {
+                    id: 9, title: "Smoky Jazz Club", description: "Late night vibes from a dimly lit room. Saxophones and soul.",
+                    songs: [
+                        { id: 901, title: "Take Five", artist: "Dave Brubeck Quartet", genre: "Jazz", mood: "Cool", duration: "5:24" },
+                        { id: 902, title: "So What", artist: "Miles Davis", genre: "Jazz", mood: "Laid-back", duration: "9:22" }
+                    ]
+                },
+                {
+                    id: 10, title: "Pop Perfection", description: "Chart-topping hits and undeniable bangers from today's biggest stars.",
+                    songs: [
+                        { id: 1001, title: "Blinding Lights", artist: "The Weeknd", genre: "Pop", mood: "Energetic", duration: "3:20" },
+                        { id: 1002, title: "As It Was", artist: "Harry Styles", genre: "Pop", mood: "Bittersweet", duration: "2:47" },
+                        { id: 1003, title: "good 4 u", artist: "Olivia Rodrigo", genre: "Pop Rock", mood: "Angsty", duration: "2:58" }
+                    ]
+                }
+            ];
+
+            function loadPlaylists() {
+                const storedPlaylists = localStorage.getItem('melodyMusePlaylists');
+                if (storedPlaylists) {
+                    playlists = JSON.parse(storedPlaylists);
+                } else {
+                    playlists = defaultPlaylists;
+                    savePlaylists();
+                }
+            }
+
+            function savePlaylists() {
+                localStorage.setItem('melodyMusePlaylists', JSON.stringify(playlists));
+            }
+
+            let createPlaylistModal = new bootstrap.Modal(document.getElementById('createPlaylistModal'));
+            let addSongModal = new bootstrap.Modal(document.getElementById('addSongModal'));
+            let deletePlaylistModal = new bootstrap.Modal(document.getElementById('deletePlaylistModal'));
+            
+            function updateCounts() {
+                const totalPlaylists = playlists.length;
+                const totalSongs = playlists.reduce((sum, p) => sum + p.songs.length, 0);
+                $('#playlist-count').text(totalPlaylists);
+                $('#song-count').text(totalSongs);
+            }
+
+            // --- POPULATE FILTERS ---
+            function populateFilters() {
+                const genres = new Set();
+                const artists = new Set();
+                
+                $('#genre-filter').html('<option value="">All Genres</option>');
+                $('#artist-filter').html('<option value="">All Artists</option>');
+
+                playlists.forEach(p => {
+                    p.songs.forEach(s => {
+                        genres.add(s.genre);
+                        artists.add(s.artist);
+                    });
+                });
+
+                Object.keys(genreColors).forEach(g => genres.add(g)); // Ensure all possible genres are in filter
+
+                genres.forEach(g => {
+                    if(g !== 'Default') $('#genre-filter').append(`<option value="${g}">${g}</option>`);
+                });
+                artists.forEach(a => $('#artist-filter').append(`<option value="${a}">${a}</option>`));
+            }
+
+            // --- RENDER FUNCTIONS ---
+            function renderPlaylists() {
+                const grid = $('#playlist-grid');
+                grid.empty();
+                
+                let processedPlaylists = [...playlists];
+
+                // Sorting
+                const sortBy = $('#sort-by').val();
+                if (sortBy === 'title-asc') {
+                    processedPlaylists.sort((a, b) => a.title.localeCompare(b.title));
+                } else if (sortBy === 'tracks-desc') {
+                    processedPlaylists.sort((a, b) => b.songs.length - a.songs.length);
+                } else if (sortBy === 'tracks-asc') {
+                    processedPlaylists.sort((a, b) => a.songs.length - b.songs.length);
+                }
+
+                // Filtering
+                const searchTerm = $('#search-input').val().toLowerCase();
+                const genreFilter = $('#genre-filter').val();
+                const artistFilter = $('#artist-filter').val();
+
+                let filteredPlaylists = processedPlaylists.filter(p => {
+                    const titleMatch = p.title.toLowerCase().includes(searchTerm);
+                    const songMatch = p.songs.some(s => 
+                        s.title.toLowerCase().includes(searchTerm) || 
+                        s.artist.toLowerCase().includes(searchTerm)
+                    );
+                    const genreMatch = genreFilter ? p.songs.some(s => s.genre === genreFilter) : true;
+                    const artistMatch = artistFilter ? p.songs.some(s => s.artist === artistFilter) : true;
+                    
+                    return (titleMatch || songMatch) && genreMatch && artistMatch;
+                });
+                
+                if (filteredPlaylists.length === 0) {
+                    $('#no-results').show();
+                } else {
+                    $('#no-results').hide();
+                }
+
+                filteredPlaylists.forEach((playlist, index) => {
+                    const genreName = getGenre(playlist);
+                    const colors = genreColors[genreName];
+
+                    const card = `
+                        <div class="col-md-6 col-lg-4 col-xl-3">
+                            <div class="card h-100 playlist-card shadow-sm" data-id="${playlist.id}" style="animation-delay: ${index * 75}ms; --hover-border-color: ${colors.color}; --hover-glow-color: ${colors.color}40;">
+                                <div class="playlist-cover-art" style="background: ${colors.gradient};">
+                                    <h3 class="playlist-cover-art-title">${playlist.title}</h3>
+                                </div>
+                                <div class="card-body d-flex flex-column">
+                                    <h5 class="card-title">${playlist.title}</h5>
+                                    <p class="card-text text-muted small flex-grow-1">${playlist.description}</p>
+                                </div>
+                                <div class="card-footer bg-transparent border-top-0">
+                                    <small class="text-muted">${playlist.songs.length} tracks</small>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    grid.append(card);
+                });
+                updateCounts();
+            }
+
+            function renderPlaylistDetails(playlistId) {
+                const playlist = playlists.find(p => p.id == playlistId);
+                if (!playlist) {
+                    $('#back-to-playlists').click();
+                    return;
+                }
+
+                const genreName = getGenre(playlist);
+                const colors = genreColors[genreName];
+
+                let tracksHtml = '';
+                playlist.songs.forEach((song, index) => {
+                    const songGenre = genreColors[song.genre] || genreColors['Default'];
+                    tracksHtml += `
+                        <tr data-song-id="${song.id}">
+                            <th scope="row">${index + 1}</th>
+                            <td>${song.title}</td>
+                            <td>${song.artist}</td>
+                            <td><span class="badge" style="background-color: ${songGenre.color}; color: #1A1A2E;">${song.genre}</span></td>
+                            <td>${song.duration}</td>
+                            <td>
+                                <button class="btn btn-sm btn-remove"><i class="fas fa-trash-alt"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                const detailsHtml = `
+                    <div class="row">
+                         <div class="col-12 mb-3 d-flex justify-content-between align-items-center flex-wrap">
+                            <button id="back-to-playlists" class="btn btn-outline-secondary mb-2 mb-md-0"><i class="fas fa-arrow-left me-2"></i>Back</button>
+                            <div>
+                                <button id="add-song-btn-modal" class="btn btn-gradient me-2" data-playlist-id="${playlist.id}"><i class="fas fa-plus me-2"></i>Add Song</button>
+                                <button id="delete-playlist-btn" class="btn btn-outline-danger" data-playlist-id="${playlist.id}" data-playlist-name="${playlist.title}"><i class="fas fa-trash-alt me-2"></i>Delete Playlist</button>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                             <div class="playlist-cover-art rounded shadow" style="background: ${colors.gradient};">
+                                <h3 class="playlist-cover-art-title">${playlist.title}</h3>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <h2 class="display-4 fw-bold mt-3 mt-md-0">${playlist.title}</h2>
+                            <p class="lead text-muted">${playlist.description}</p>
+                            <p><strong>Total tracks:</strong> ${playlist.songs.length}</p>
+                        </div>
+                    </div>
+                    <hr class="my-4" style="border-color: var(--border-color);">
+                    <h3 class="mb-3">Tracklist</h3>
+                    <div class="table-responsive">
+                         <table class="table table-dark table-hover align-middle tracklist-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Title</th>
+                                    <th scope="col">Artist</th>
+                                    <th scope="col">Genre</th>
+                                    <th scope="col">Duration</th>
+                                    <th scope="col">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${tracksHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                $('#playlist-details-view').html(detailsHtml).data('playlist-id', playlistId);
+                $('#playlist-list-view').hide();
+                $('#playlist-details-view').addClass('is-visible');
+            }
+
+            // --- EVENT HANDLERS ---
+            $('#search-input, #genre-filter, #artist-filter, #sort-by').on('input change', renderPlaylists);
+            
+            $('#reset-filters').on('click', function() {
+                $('#search-input').val('');
+                $('#genre-filter').val('');
+                $('#artist-filter').val('');
+                $('#sort-by').val('default');
+                renderPlaylists();
+            });
+
+            // View switching
+            $(document).on('click', '.playlist-card', function() {
+                const playlistId = $(this).data('id');
+                renderPlaylistDetails(playlistId);
+            });
+
+            $(document).on('click', '#back-to-playlists', function() {
+                $('#playlist-details-view').removeClass('is-visible').html('').hide();
+                $('#playlist-list-view').show();
+                renderPlaylists();
+            });
+
+            // Create Playlist
+            $('#save-playlist-btn').on('click', function() {
+                const newPlaylist = {
+                    id: Date.now(),
+                    title: $('#newPlaylistTitle').val(),
+                    description: $('#newPlaylistDesc').val(),
+                    songs: []
+                };
+                if(newPlaylist.title) {
+                     playlists.push(newPlaylist);
+                     savePlaylists();
+                     renderPlaylists();
+                     populateFilters();
+                     createPlaylistModal.hide();
+                     $('#create-playlist-form')[0].reset();
+                }
+            });
+            
+            // Open Add Song Modal
+            $(document).on('click', '#add-song-btn-modal', function() {
+                const playlistId = $(this).data('playlist-id');
+                $('#addSongPlaylistId').val(playlistId);
+                addSongModal.show();
+            });
+
+            // Save New Song
+            $('#save-song-btn').on('click', function() {
+                const playlistId = $('#addSongPlaylistId').val();
+                const newSong = {
+                    id: Date.now(),
+                    title: $('#newSongTitle').val(),
+                    artist: $('#newSongArtist').val(),
+                    genre: $('#newSongGenre').val(),
+                    mood: $('#newSongMood').val(),
+                    duration: $('#newSongDuration').val()
+                };
+
+                if (newSong.title && newSong.artist && newSong.genre && newSong.mood && newSong.duration) {
+                    const playlist = playlists.find(p => p.id == playlistId);
+                    if(playlist) {
+                        playlist.songs.push(newSong);
+                        savePlaylists();
+                        renderPlaylistDetails(playlistId);
+                        populateFilters();
+                        addSongModal.hide();
+                        $('#add-song-form')[0].reset();
+                    }
+                }
+            });
+
+            // Remove song
+            $(document).on('click', '.btn-remove', function() {
+                const songId = $(this).closest('tr').data('song-id');
+                const playlistId = $('#playlist-details-view').data('playlist-id');
+                const playlist = playlists.find(p => p.id == playlistId);
+                if(playlist) {
+                    playlist.songs = playlist.songs.filter(s => s.id != songId);
+                    savePlaylists();
+                }
+                renderPlaylistDetails(playlistId);
+            });
+
+            // Open Delete Playlist Modal
+            $(document).on('click', '#delete-playlist-btn', function() {
+                const playlistId = $(this).data('playlist-id');
+                const playlistName = $(this).data('playlist-name');
+                $('#playlist-name-to-delete').text(playlistName);
+                $('#confirm-delete-btn').data('playlist-id', playlistId);
+                deletePlaylistModal.show();
+            });
+
+            // Confirm Delete Playlist
+            $('#confirm-delete-btn').on('click', function() {
+                const playlistId = $(this).data('playlist-id');
+                playlists = playlists.filter(p => p.id != playlistId);
+                savePlaylists();
+                deletePlaylistModal.hide();
+                $('#back-to-playlists').click(); // Go back to the main view
+            });
+
+
+            // --- INITIALIZATION ---
+            loadPlaylists();
+            populateFilters();
+            renderPlaylists();
+        });
+    </script>
+</body>
+</html>
+
